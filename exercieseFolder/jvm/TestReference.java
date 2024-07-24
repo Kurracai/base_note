@@ -14,8 +14,8 @@ import java.lang.ref.WeakReference;
 
 
 public class TestReference {
-    public static void main(String[] args) throws InterruptedException {
-        String testWeak = new String("123");
+    public static void main(TestA[] args) throws InterruptedException {
+        TestA testWeak = new TestA("123");
         System.gc();
         Thread.sleep(1000);
         if(testWeak!=null){

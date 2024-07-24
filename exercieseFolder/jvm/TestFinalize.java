@@ -13,7 +13,7 @@ public class TestFinalize {
         System.out.println("finalize执行了");
         TestFinalize.STATIC_FINAL = this; //再次搞一个引用指向自己
     }
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(TestA[] args) throws InterruptedException {
         STATIC_FINAL = new TestFinalize(); //引用指向对象
         STATIC_FINAL = null;
         System.gc();

@@ -9,8 +9,8 @@ import java.lang.ref.WeakReference;
 
 
 public class TestWeakReference {
-    public static void main(String[] args) throws InterruptedException {
-        WeakReference<String> testWeak = new WeakReference<String>(new String("123"));
+    public static void main(TestA[] args) throws InterruptedException {
+        WeakReference<TestA> testWeak = new WeakReference<TestA>(new TestA("123"));
         System.gc();
         Thread.sleep(1000);
         if(testWeak.get()!=null){
