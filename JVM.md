@@ -1155,7 +1155,7 @@ java无需任何同步能保证的只有以上的。
 
 不可变-只要一个不可变对象被正确构建（没有发生this引用逃逸），如果这个共享数据是一个对象，那就必须是对象能保证行为不会对其状态产生任何影响。如java.lang.String以及枚举类型与java.lang.Number的部分子类，比如Long和Double，BigInteger和BigDecimal。但原子类AtomicInteger和AtomicLong可变。
 
-绝对线程安全-不管运行环境如何调用者都不需要任何额外的挺不错是。
+绝对线程安全-不管运行环境如何调用者都不需要任何额外的同步措施。
 
 java.util.Vector是一个线程安全的容器，他的所有方法都用synchronized，但是也不意味着调用时候永远不需要同步手段
 
