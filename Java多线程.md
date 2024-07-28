@@ -159,7 +159,6 @@ Runnable 方式的优缺点：
   4. 实现解耦操作，线程任务代码可以被多个线程共享，线程任务代码和线程独立
   5. 线程池可以放入实现 Runnable 或 Callable 线程任务对象
 
-
 ---
 
 #### Callable
@@ -276,11 +275,9 @@ yield：
 
 #### join
 
-
 join的应用场景：
 
- ![1721571463580.png](./1721571463580.png)
-
+![1721571463580.png](./1721571463580.png)
 
 public final void join()：等待这个线程结束
 
@@ -616,7 +613,6 @@ Java 提供了线程优先级的机制，优先级会提示（hint）调度器�
 * RUNNABLE <--> TIMED_WAITING：调用 obj.wait(long n) 方法、当前线程调用 t.join(long n) 方法、当前线程调用 Thread.sleep(long n)
 * RUNNABLE <--> BLOCKED：t 线程用 synchronized(obj) 获取了对象锁时竞争失败
 
-
 详情查看P46
 
 对于WAITING状态可以使用一个join来达成
@@ -921,6 +917,10 @@ LocalVariableTable:
 
 #### 锁升级
 
+[Java锁与线程的那些事 (youzan.com)](https://tech.youzan.com/javasuo-yu-xian-cheng-de-na-xie-shi/)
+
+![1722004609274.png](./1722004609274.png)
+
 ##### 升级过程
 
 **synchronized 是可重入、不公平的重量级锁**，所以可以对其进行优化
@@ -957,10 +957,14 @@ LocalVariableTable:
 
 **批量撤销**：如果对象被多个线程访问，但没有竞争，这时偏向了线程 T1 的对象仍有机会重新偏向 T2，重偏向会重置对象的 Thread ID
 
+[批量重偏向和批量撤销理解-CSDN博客](https://blog.csdn.net/qq_33553218/article/details/107699356)
+
 * 批量重偏向：（此时已经是轻量级锁了）当撤销偏向锁阈值超过 20 次后，JVM 会觉得是不是偏向错了，于是在给这些对象加锁时重新偏向至加锁线程
 * 批量撤销：当撤销偏向锁阈值超过 40 次后，JVM 会觉得自己确实偏向错了，根本就不该偏向，于是整个类的所有对象都会变为不可偏向的，新建的对象也是不可偏向
 
-**锁消除**
+**锁消除*
+
+当觉得不会出现溢出的时候，比如数据来源于局部变量，且全部在一个方法中且没有溢出时候。
 
 ---
 
@@ -1850,7 +1854,7 @@ public class demo {
                 queue.put(new Message(id,"值"+id));
             }, "生产者" + i).start();
         }
-      
+  
         new Thread(() -> {
             while (true) {
                 try {
@@ -2728,7 +2732,7 @@ AtomicReference 类：
 public class AtomicReferenceDemo {
     public static void main(String[] args) {
         Student s1 = new Student(33, "z3");
-      
+  
         // 创建原子引用包装类
         AtomicReference<Student> atomicReference = new AtomicReference<>();
         // 设置主内存共享变量为s1
@@ -5837,7 +5841,7 @@ public FutureTask(Callable<V> callable){
 public FutureTask(Runnable runnable, V result) {
     // 适配器模式
     this.callable = Executors.callable(runnable, result);
-    this.state = NEW;     
+    this.state = NEW;   
 }
 public static <T> Callable<T> callable(Runnable task, T result) {
     if (task == null) throw new NullPointerException();
@@ -7427,7 +7431,7 @@ public void lock() {
       int c = getState();
       // 条件成立说明当前处于【无锁状态】
       if (c == 0) {
-          //如果还没有获得锁，尝试用cas获得，这里体现非公平性: 不去检查 AQS 队列是否有阻塞线程直接获取锁      
+          //如果还没有获得锁，尝试用cas获得，这里体现非公平性: 不去检查 AQS 队列是否有阻塞线程直接获取锁  
       	if (compareAndSetState(0, acquires)) {
               // 获取锁成功设置当前线程为独占锁线程。
               setExclusiveOwnerThread(current);
@@ -7505,7 +7509,7 @@ public void lock() {
 * 线程节点加入队列成功，进入 AbstractQueuedSynchronizer#acquireQueued 逻辑阻塞线程
 
   * acquireQueued 会在一个自旋中不断尝试获得锁，失败后进入 park 阻塞
-  * 如果当前线程是在 head 节点后，会再次 tryAcquire 尝试获取锁，state 仍为 1 则失败（第三次）
+  * 如果当前线程是在 head 节点后，会再次 tryAcquire 尝试获取锁，state 仍~~~~为 1 则失败（第三次）
 
   ```java
   final boolean acquireQueued(final Node node, int arg) {
@@ -7645,7 +7649,7 @@ Thread-0 释放锁，进入 release 流程
   private void unparkSuccessor(Node node) {
       // 当前节点的状态
       int ws = node.waitStatus;  
-      if (ws < 0)      
+      if (ws < 0)  
           // 【尝试重置状态为 0】，因为当前节点要完成对后续节点的唤醒任务了，不需要 -1 了
           compareAndSetWaitStatus(node, ws, 0);  
       // 找到需要 unpark 的节点，当前节点的下一个  
@@ -7791,18 +7795,18 @@ public void getLock() {
 ```java
 public static void main(String[] args) throws InterruptedException {  
     ReentrantLock lock = new ReentrantLock();  
-    Thread t1 = new Thread(() -> {      
-        try {          
-            System.out.println("尝试获取锁");          
-            lock.lockInterruptibly();      
-        } catch (InterruptedException e) {          
-            System.out.println("没有获取到锁，被打断，直接返回");          
-            return;      
-        }      
-        try {          
-            System.out.println("获取到锁");      
-        } finally {          
-            lock.unlock();      
+    Thread t1 = new Thread(() -> {  
+        try {      
+            System.out.println("尝试获取锁");      
+            lock.lockInterruptibly();  
+        } catch (InterruptedException e) {      
+            System.out.println("没有获取到锁，被打断，直接返回");      
+            return;  
+        }  
+        try {      
+            System.out.println("获取到锁");  
+        } finally {      
+            lock.unlock();  
         }  
     }, "t1");  
     lock.lock();  
@@ -7821,8 +7825,8 @@ public static void main(String[] args) throws InterruptedException {
 
   ```java
   public final void acquire(int arg) {  
-      if (!tryAcquire(arg) && acquireQueued(addWaiter(Node.EXCLUSIVE), arg))//阻塞等待      
-          // 如果acquireQueued返回true，打断状态 interrupted = true      
+      if (!tryAcquire(arg) && acquireQueued(addWaiter(Node.EXCLUSIVE), arg))//阻塞等待  
+          // 如果acquireQueued返回true，打断状态 interrupted = true  
           selfInterrupt();
   }
   static void selfInterrupt() {
@@ -7833,21 +7837,21 @@ public static void main(String[] args) throws InterruptedException {
 
   ```java
   final boolean acquireQueued(final Node node, int arg) {  
-      try {      
-          boolean interrupted = false;      
-          for (;;) {          
-              final Node p = node.predecessor();          
-              if (p == head && tryAcquire(arg)) {              
-                  setHead(node);              
-                  p.next = null; // help GC              
-                  failed = false;              
+      try {  
+          boolean interrupted = false;  
+          for (;;) {      
+              final Node p = node.predecessor();      
+              if (p == head && tryAcquire(arg)) {          
+                  setHead(node);          
+                  p.next = null; // help GC          
+                  failed = false;          
                   // 还是需要获得锁后, 才能返回打断状态
-                  return interrupted;          
-              }          
+                  return interrupted;      
+              }      
               if (shouldParkAfterFailedAcquire(p, node) && parkAndCheckInterrupt()){
                   // 条件二中判断当前线程是否被打断，被打断返回true，设置中断标记为 true，【获取锁后返回】
                   interrupted = true;  
-              }                
+              }            
           } 
       } finally {
           if (failed)
@@ -8015,7 +8019,7 @@ public static void main(String[] args) {
 
   ```java
   public final boolean tryAcquireNanos(int arg, long nanosTimeout) {
-      if (Thread.interrupted())      
+      if (Thread.interrupted())  
           throw new InterruptedException();  
       // tryAcquire 尝试一次
       return tryAcquire(arg) || doAcquireNanos(arg, nanosTimeout);
@@ -8146,7 +8150,7 @@ public static void main(String[] args) throws InterruptedException {
     Thread.sleep(1000);
     //叫醒
     new Thread(() -> {
-        try {          
+        try {      
             lock.lock();
             //唤醒
             condition2.signal();
@@ -8545,7 +8549,7 @@ public static void main(String[] args) {
 * 读写锁：
 
   ```java
-  private final ReentrantReadWriteLock.ReadLock readerLock;	
+  private final ReentrantReadWriteLock.ReadLock readerLock;
   private final ReentrantReadWriteLock.WriteLock writerLock;
   ```
 * 构造方法：默认是非公平锁，可以指定参数创建公平锁
@@ -8928,11 +8932,11 @@ Sync 类的属性：
               }
               // 如果已经是 0 了，改为 -3，用来解决传播性
               else if (ws == 0 && !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
-                  continue;              
+                  continue;          
           }
           // 条件不成立说明被唤醒的节点非常积极，直接将自己设置为了新的 head，
           // 此时唤醒它的节点（前驱）执行 h == head 不成立，所以不会跳出循环，会继续唤醒新的 head 节点的后继节点
-          if (h == head)                 
+          if (h == head)             
               break;
       }
   }
@@ -9657,10 +9661,10 @@ public static void main(String[] args) {
           int current = getState();
           int next = current + releases;
           // 索引越界判断
-          if (next < current)          
-              throw new Error("Maximum permit count exceeded");      
+          if (next < current)      
+              throw new Error("Maximum permit count exceeded");  
           // 释放锁
-          if (compareAndSetState(current, next))          
+          if (compareAndSetState(current, next))      
               return true;  
       }
   }
@@ -9686,10 +9690,10 @@ private void setHeadAndPropagate(Node node, int propagate) {
     setHead(node);  
     // 有空闲资源  
     if (propagate > 0 && node.waitStatus != 0) {  
-        Node s = node.next;      
-        // 下一个      
-        if (s == null || s.isShared())          
-            unparkSuccessor(node);      
+        Node s = node.next;  
+        // 下一个  
+        if (s == null || s.isShared())      
+            unparkSuccessor(node);  
     }
 }
 ```
@@ -9863,7 +9867,7 @@ public class ConcurrentHashMapDemo{
     public static void main(String[] args){
         new AddMapDataThread().start();
         new AddMapDataThread().start();
-      
+  
         Thread.sleep(1000 * 5);//休息5秒，确保两个线程执行完毕
         System.out.println("Map大小：" + map.size());//20万
     }
@@ -9906,7 +9910,7 @@ void transfer(Entry[] newTable, boolean rehash) {
             // 将该数组下标的节点变为e节点
             newTable[i] = e; 
             // 遍历链表的下一节点
-            e = next;                                 
+            e = next;                             
         }
     }
 }
@@ -11338,7 +11342,7 @@ BaseHeader 存储数据，headIndex 存储索引，纵向上**所有索引都指
                   // 3.获取 n 的右节点
                   Node<K,V> f = n.next;
                   // 4.条件竞争，并发下其他线程在 b 之后插入节点或直接删除节点 n, break 到步骤 0
-                  if (n != b.next)            
+                  if (n != b.next)        
                       break;
                   //  若节点 n 已经删除, 则调用 helpDelete 进行【帮助删除节点】
                   if ((v = n.value) == null) {
@@ -12561,7 +12565,7 @@ public class InetAddressDemo {
         InetAddress ip3 = InetAddress.getByName("182.61.200.6");
         System.out.println(ip3.getHostName());//182.61.200.6
         System.out.println(ip3.getHostAddress());//182.61.200.6
-      
+  
         // 4.判断是否能通： ping  5s之前测试是否可通
         System.out.println(ip2.isReachable(5000)); // ping百度
     }
@@ -12996,7 +13000,7 @@ public class ClientDemo {
         bos.flush();// 刷新图片数据到服务端！！
         socket.shutdownOutput();// 告诉服务端我的数据已经发送完毕，不要在等我了！
         bis.close();
-      
+  
         //等待着服务端的响应数据！！
         BufferedReader br = new BufferedReader(
            				 new InputStreamReader(socket.getInputStream()));
@@ -13038,7 +13042,7 @@ class ServerReaderThread extends Thread{
             }
             bos.close();
             System.out.println("服务端接收完毕了！");
-          
+      
             // 4.响应数据给客户端
             PrintStream ps = new PrintStream(socket.getOutputStream());
             ps.println("您好，已成功接收您上传的图片！");
@@ -13252,21 +13256,21 @@ public class TestBuffer {
 		System.out.println(bufferf.position());//0
 		System.out.println(buffer.limit());//1024
 		System.out.println(buffer.capacity());//1024
-      
+  
         //2. 利用 put() 存入数据到缓冲区中
       	buffer.put(str.getBytes());
      	System.out.println("-----------------put()----------------");
 		System.out.println(bufferf.position());//7
 		System.out.println(buffer.limit());//1024
 		System.out.println(buffer.capacity());//1024
-      
+  
         //3. 切换读取数据模式
         buffer.flip();
         System.out.println("-----------------flip()----------------");
         System.out.println(buffer.position());//0
         System.out.println(buffer.limit());//7
         System.out.println(buffer.capacity());//1024
-      
+  
         //4. 利用 get() 读取缓冲区中的数据
         byte[] dst = new byte[buffer.limit()];
         buffer.get(dst);
@@ -13274,7 +13278,7 @@ public class TestBuffer {
         System.out.println(new String(dst, 0, dst.length));
         System.out.println(buffer.position());//7
         System.out.println(buffer.limit());//7
-     
+   
         //5. clear() : 清空缓冲区. 但是缓冲区中的数据依然存在，但是处于“被遗忘”状态
         System.out.println(buffer.hasRemaining());//true
         buffer.clear();
@@ -13983,7 +13987,7 @@ Java AIO(NIO.2) ： AsynchronousI/O，异步非阻塞，采用了 Proactor 模�
 
 ```java
 AIO异步非阻塞，基于NIO的，可以称之为NIO2.0
-  BIO                     NIO                                AIO      
+  BIO                     NIO                                AIO  
 Socket                SocketChannel                    AsynchronousSocketChannel
 ServerSocket          ServerSocketChannel	       AsynchronousServerSocketChannel
 ```
