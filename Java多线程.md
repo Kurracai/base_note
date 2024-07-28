@@ -8019,7 +8019,7 @@ public static void main(String[] args) {
 
   ```java
   public final boolean tryAcquireNanos(int arg, long nanosTimeout) {
-      if (Thread.interrupted())  
+      if (Thread.interrupted())      
           throw new InterruptedException();  
       // tryAcquire 尝试一次
       return tryAcquire(arg) || doAcquireNanos(arg, nanosTimeout);
@@ -8150,7 +8150,7 @@ public static void main(String[] args) throws InterruptedException {
     Thread.sleep(1000);
     //叫醒
     new Thread(() -> {
-        try {      
+        try {          
             lock.lock();
             //唤醒
             condition2.signal();
@@ -8932,11 +8932,11 @@ Sync 类的属性：
               }
               // 如果已经是 0 了，改为 -3，用来解决传播性
               else if (ws == 0 && !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
-                  continue;          
+                  continue;              
           }
           // 条件不成立说明被唤醒的节点非常积极，直接将自己设置为了新的 head，
           // 此时唤醒它的节点（前驱）执行 h == head 不成立，所以不会跳出循环，会继续唤醒新的 head 节点的后继节点
-          if (h == head)             
+          if (h == head)                 
               break;
       }
   }
@@ -9661,10 +9661,10 @@ public static void main(String[] args) {
           int current = getState();
           int next = current + releases;
           // 索引越界判断
-          if (next < current)      
-              throw new Error("Maximum permit count exceeded");  
+          if (next < current)          
+              throw new Error("Maximum permit count exceeded");      
           // 释放锁
-          if (compareAndSetState(current, next))      
+          if (compareAndSetState(current, next))          
               return true;  
       }
   }
@@ -9690,10 +9690,10 @@ private void setHeadAndPropagate(Node node, int propagate) {
     setHead(node);  
     // 有空闲资源  
     if (propagate > 0 && node.waitStatus != 0) {  
-        Node s = node.next;  
-        // 下一个  
-        if (s == null || s.isShared())      
-            unparkSuccessor(node);  
+        Node s = node.next;      
+        // 下一个      
+        if (s == null || s.isShared())          
+            unparkSuccessor(node);      
     }
 }
 ```
@@ -9867,7 +9867,7 @@ public class ConcurrentHashMapDemo{
     public static void main(String[] args){
         new AddMapDataThread().start();
         new AddMapDataThread().start();
-  
+      
         Thread.sleep(1000 * 5);//休息5秒，确保两个线程执行完毕
         System.out.println("Map大小：" + map.size());//20万
     }
@@ -9910,7 +9910,7 @@ void transfer(Entry[] newTable, boolean rehash) {
             // 将该数组下标的节点变为e节点
             newTable[i] = e; 
             // 遍历链表的下一节点
-            e = next;                             
+            e = next;                                 
         }
     }
 }
@@ -11342,7 +11342,7 @@ BaseHeader 存储数据，headIndex 存储索引，纵向上**所有索引都指
                   // 3.获取 n 的右节点
                   Node<K,V> f = n.next;
                   // 4.条件竞争，并发下其他线程在 b 之后插入节点或直接删除节点 n, break 到步骤 0
-                  if (n != b.next)        
+                  if (n != b.next)            
                       break;
                   //  若节点 n 已经删除, 则调用 helpDelete 进行【帮助删除节点】
                   if ((v = n.value) == null) {
@@ -12565,7 +12565,7 @@ public class InetAddressDemo {
         InetAddress ip3 = InetAddress.getByName("182.61.200.6");
         System.out.println(ip3.getHostName());//182.61.200.6
         System.out.println(ip3.getHostAddress());//182.61.200.6
-  
+      
         // 4.判断是否能通： ping  5s之前测试是否可通
         System.out.println(ip2.isReachable(5000)); // ping百度
     }
@@ -13000,7 +13000,7 @@ public class ClientDemo {
         bos.flush();// 刷新图片数据到服务端！！
         socket.shutdownOutput();// 告诉服务端我的数据已经发送完毕，不要在等我了！
         bis.close();
-  
+      
         //等待着服务端的响应数据！！
         BufferedReader br = new BufferedReader(
            				 new InputStreamReader(socket.getInputStream()));
@@ -13042,7 +13042,7 @@ class ServerReaderThread extends Thread{
             }
             bos.close();
             System.out.println("服务端接收完毕了！");
-      
+          
             // 4.响应数据给客户端
             PrintStream ps = new PrintStream(socket.getOutputStream());
             ps.println("您好，已成功接收您上传的图片！");
@@ -13256,21 +13256,21 @@ public class TestBuffer {
 		System.out.println(bufferf.position());//0
 		System.out.println(buffer.limit());//1024
 		System.out.println(buffer.capacity());//1024
-  
+      
         //2. 利用 put() 存入数据到缓冲区中
       	buffer.put(str.getBytes());
      	System.out.println("-----------------put()----------------");
 		System.out.println(bufferf.position());//7
 		System.out.println(buffer.limit());//1024
 		System.out.println(buffer.capacity());//1024
-  
+      
         //3. 切换读取数据模式
         buffer.flip();
         System.out.println("-----------------flip()----------------");
         System.out.println(buffer.position());//0
         System.out.println(buffer.limit());//7
         System.out.println(buffer.capacity());//1024
-  
+      
         //4. 利用 get() 读取缓冲区中的数据
         byte[] dst = new byte[buffer.limit()];
         buffer.get(dst);
@@ -13278,7 +13278,7 @@ public class TestBuffer {
         System.out.println(new String(dst, 0, dst.length));
         System.out.println(buffer.position());//7
         System.out.println(buffer.limit());//7
-   
+     
         //5. clear() : 清空缓冲区. 但是缓冲区中的数据依然存在，但是处于“被遗忘”状态
         System.out.println(buffer.hasRemaining());//true
         buffer.clear();
@@ -13987,7 +13987,7 @@ Java AIO(NIO.2) ： AsynchronousI/O，异步非阻塞，采用了 Proactor 模�
 
 ```java
 AIO异步非阻塞，基于NIO的，可以称之为NIO2.0
-  BIO                     NIO                                AIO  
+  BIO                     NIO                                AIO      
 Socket                SocketChannel                    AsynchronousSocketChannel
 ServerSocket          ServerSocketChannel	       AsynchronousServerSocketChannel
 ```
