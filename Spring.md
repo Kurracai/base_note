@@ -112,10 +112,7 @@ Spring自带了几种容器实现：
 
 1.读取配置
 
-
-
 2.bean的定义
-
 
 3.Bean实例化与依赖注入
 
@@ -412,7 +409,6 @@ public class HappyController {
 
 ## 何时进行依赖注入
 
-
 当 Spring IOC 容器启动时完成定位、加载、注册操作，此时 IOC容器已经获取到 applicationContext.xml 配置文件中的全部配置，并以 BeanDefinition类的形式保存在一个名为：beanDefinitionMap 的 ConcurrentHashMap 中。如下所示
 
 ```java
@@ -441,7 +437,9 @@ BeanFactory：Bean工厂，创建Bean对象的工厂。
 
 ## 作用
 
-让相互写作的软件组件保持松散耦合
+让相互写作的软件组件保持松散耦合。
+
+拦截指定方法，并且对方法增强，比如：日志、事务等，无侵入实现。
 
 # spring切面
 
@@ -453,14 +451,463 @@ BeanFactory：Bean工厂，创建Bean对象的工厂。
 
 ## 概念
 
+![1722217626822.png](./1722217626822.png)
 
-## 动态代理
+代码如下：
 
+```java
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.Pointcut;
+
+@Aspect
+public class MyAspect {
+
+    @Pointcut("execution(* MyService.performTask(..))")
+    public void performTaskPointcut() {
+        // 切入点表达式
+    }
+
+    @Before("performTaskPointcut()")
+    public void beforeTask() {
+        System.out.println("Before executing task...");
+    }
+}
+
+```
+
+**连接点：**
+
+@Pointcut("execution(* MyService.performTask(..))")
+
+程序执行过程中可以插入切面的点，也就是能匹配上这个表达式的所有方法执行。
+
+**切入点：**
+
+```java
+public void performTaskPointcut() {
+// 切入点表达式
+}
+```
+
+一个匹配连接点的表达式，这段代码定义了一个切入点的表达式。
+
+@Pointcut("execution(* MyService.performTask(..))")
+
+**通知：**
+
+实际执行的代码
+
+```java
+@Before("performTaskPointcut()")
+public void beforeTask() {
+    System.out.println("Before executing task...");
+}
+
+```
+
+**目标：**
+
+被通知增强的对象，或者说被匹配的对象
+
+```java
+public class MyService {
+    public void performTask() {
+        System.out.println("Executing task...");
+    }
+}
+
+```
+
+**切面：**
+
+通知和切入点的结合。一个切面定义了在什么情况下切入点执行什么操作。整个MyAaspect就是一个切面
+
+```java
+@Aspect
+public class MyAspect {
+
+    @Pointcut("execution(* MyService.performTask(..))")
+    public void performTaskPointcut() {
+        // 切入点表达式
+    }
+
+    @Before("performTaskPointcut()")
+    public void beforeTask() {
+        System.out.println("Before executing task...");
+    }
+}
+
+```
+
+**代理：**
+
+包含切面逻辑的对象，代理目标对象的方法调用，通过代理对象执行目标方法。实际返回的Bean也是一个代理对象的。
+
+```java
+@Aspect
+public class MyAspect {
+
+    @Pointcut("execution(* MyService.performTask(..))")
+    public void performTaskPointcut() {
+        // 切入点表达式
+    }
+
+    @Before("performTaskPointcut()")
+    public void beforeTask() {
+        System.out.println("Before executing task...");
+    }
+}
+
+```
+
+
+
+通知的分类：
+
+ ![1722218471519.png](./1722218471519.png)
+
+AOP织入时期
+
+![1722218496850.png](./1722218496850.png)
+
+## 实现原理-动态代理
+
+详情查看设计模式内容。
+
+### 设计模式-代理
+
+### JDK动态代理
+
+### CGLib动态代理
+
+### spring是如何选择
+
+```java
+@Override
+public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException {
+    // 1.config.isProxyTargetClass() 代表 配置中的proxy-target-class属性true/false，默认false
+    // 
+    if (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) {
+        // 目标代理类，如 com.service.impl.UserServiceImpl
+        Class<?> targetClass = config.getTargetClass();
+        if (targetClass == null) {
+            throw new AopConfigException("TargetSource cannot determine target class: " +
+                                         "Either an interface or a target is required for proxy creation.");
+        }
+        // 目标类如果是一个接口 或者 （Proxy是JDK动态代理用到的一个类）也就是说这里表示目标类是否为这个Proxy 类型
+        if (targetClass.isInterface() || Proxy.isProxyClass(targetClass)) {
+            return new JdkDynamicAopProxy(config);
+        }
+        return new ObjenesisCglibAopProxy(config);
+    }
+    else {
+        return new JdkDynamicAopProxy(config);
+    }
+}
+```
+
+如果目标对象实现了接口默认使用JDK来代理实现AOP，如果目标对象实现了接口可以强制使用CGLIB，如果目标对象没有实现了接口，必须使用CGLIB。
+
+JDK动态代理的效率要更高一些。
 
 # spring 事务
 
+通过@EnableTransactionManagement
+
+## 概念
+
+事务由事务开始与事务结束之间执行的全部数据库操作组成。
+
+## 特性
+
+原子性-要么全部完成要么全部不完成
+
+一致性-一个事务执行前和之后都必须处于一致的状态
+
+隔离性-每个事务都有自己的完整空间，并发事务的修改与其他并发事务的修改隔离
+
+持久性-只要事务成功完成，对数据库的更新就必须保存下来
+
+## @Transactional
+
+加在方法上只会影响方法
+
+加在类上，会影响类中所有方法
+
+## 事务属性
+
+### 只读（@Transactional(readOnly = true)）
+
+说明只有读操作，如果其中由增删改，就会报错：connection is read only
+
+### 超时（@Transactional(timeout=3)）
+
+超时就会报错，TransactionTimedOutException
+
+### 回滚策略（@Transactional(rollBackFor = XXX.class)）
+
+rollBackFor;rollbackForClassName;noRollbackFor;noRollbackForClassName
+
+className的往里传递全类名
+
+## 隔离级别（@Transactional(isolation = ISOLATION.DEFAULT)）
+
+Spring事务本质上使用的数据库事务，数据库事务本质上使用数据库锁，所以spring事务本质上使用数据库锁。
+
+隔离级别值得也是事务与其他事务之间的隔离成都，隔离级别越高，一致性越好。
+
+选项如下：
+
+```java
+@Transactional(isolation = Isolation.DEFAULT)//使用数据库默认的隔离级别
+@Transactional(isolation = Isolation.READ_UNCOMMITTED)//读未提交
+@Transactional(isolation = Isolation.READ_COMMITTED)//读已提交
+@Transactional(isolation = Isolation.REPEATABLE_READ)//可重复读
+@Transactional(isolation = Isolation.SERIALIZABLE)//串行化
+
+```
+
+读未提交-允许A读取B未提交的修改。
+
+读已提交-A只能读取B提交的修改。
+
+可重复读-A执行期间不允许其他事务更新字段。
+
+串行化-A执行期间禁止其他事务对表做增删改。
+
+ ![1722236009409.png](./1722236009409.png)
+
+数据库对事务隔离级别的支持程度：
+
+![1722236067507.png](./1722236067507.png)
+
+**脏读、不可重复读、幻读：**
+
+- 脏读：B事务读取了A事务未提交的数据且A事务回滚。
+- 不可重复读：A事务两次查询同一数据的内容不同，B在两次读取中修改了数据。
+- 幻读：同义词食物中两次相同查询的数据条数不一致，第一次5第二次10，两次查询间隙，另外一个事务插入5条数据。
+
+
+## 事务传播行为
+
+service中有方法a和方法b，a和b上都有事务，a在执行过程中调用了b，事务是如何传递的，是开启新事物还是合并到一个事务。
+
+- REQUIRED：支持当前事务，如果不存在就新建一个(默认)【没有就新建，有就加入】
+- SUPPORTS：支持当前事务，如果当前没有事务，就以非事务方式执行**有就加入，没有就不管了**
+- **MANDATORY：必须运行在一个事务中，如果当前没有事务正在发生，将抛出一个异常**【有就加入，没有就抛异常】
+- REQUIRES_NEW：开启一个新的事务，如果一个事务已经存在，则将这个存在的事务挂起【不管有没有，直接开启一个新事务，开启的新事务和之前的事务不存在嵌套关系，之前事务被挂起】
+- **NOT_SUPPORTED：以非事务方式运行，如果有事务存在，挂起当前事务**【不支持事务，存在就挂起】
+- **NEVER：以非事务方式运行，如果有事务存在，抛出异常**【不支持事务，存在就抛异常】
+- NESTED：如果当前正有一个事务在进行中，则该方法应当运行在一个嵌套式事务中。被嵌套的事务可以独立于外层事务进行提交或回滚。如果外层事务不存在，行为就像REQUIRED一样。【有事务的话，就在这个事务里再嵌套一个完全独立的事务，嵌套的事务可以独立的提交和回滚。没有事务就和REQUIRED一样。】
+
+requires_new - 外部事务被挂起就意味着事务的执行会被暂停，上下文被保存以便后续回复；内部事务抛出异常也是，新事务存在独立性，该事务的提交或者回滚不影响挂起事务；外部事务抛出异常不会影响内部事务。会挂起当前事务和数据库连接，启动新的事务和连接，新的事务完成以后回复原来的事务和连接。
+
+NESTED- 内部的子事务存在依赖于外部事务。子事务的回滚只影响子事务，但外部事务的回滚所有嵌套事务都会被回滚。子事务的异常只允许子事务（如果需要子事务的回滚也可以标记外部事务为回滚）；如果外部事务抛出异常并回滚，所有嵌套事务都会回滚。这种子事务是通过数据库的保存点机制，嵌套事务开启时候，会在数据库链接上创建保存点，如果嵌套事务回滚，spring会将连接回滚到保存点。
+
+## 类型
+
+编程式事务管理-声明式事务管理
+
+编程式使用TransactionTemplate
+
+## 原理
+
+使用数据库锁；
+
+通过AOP拦截注解方法并做动态代理，捕获异常，spring事务其实是把事务交给spring处理；spring事务只有捕获到异常才会终止回滚，如果做了try/catch那么事务就不会中止或者回滚。
+
+spring事务回滚一个事务中的所有数据库操作，本质上是回滚同一数据库连接上的数据库操作。
+
+### 动态代理
+
+使用TransactionalInterceptor类来处理这些注解，并创建代理对象。
+
+## 事务失效及其原因
+
+### 底层数据库不支持
+
+比如Mysql的Innodb支持事务，但是MyISAM不支持，那么如果底层表是基于MyIsam创建，那么@Transactional就会失效。
+
+### 事务不回滚
+
+#### 错误的传播特性
+
+比如requires_new
+
+#### 使用trycatch捕获了异常没有抛出
+
+#### 手动抛了其他异常
+
+```java
+@Slf4j
+@Service
+public class UserService {
+  
+    @Transactional
+    public void add(UserModel userModel) throws Exception {
+        try {
+             saveData(userModel);
+             updateData(userModel);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new Exception(e);
+        }
+    }
+}
+```
+
+@Transactional默认只回滚RuntimeException以及Error，对于普通的Exception不会回滚
+
+#### 自定义了回滚异常
+
+#### 嵌套事务回滚太多
+
+可以通过trycatch解决问题，如下图，这样回滚仅限于内部的doOtherThing
+
+```java
+@Slf4j
+@Service
+public class UserService {
+ 
+    @Autowired
+    private UserMapper userMapper;
+ 
+    @Autowired
+    private RoleService roleService;
+ 
+    @Transactional
+    public void add(UserModel userModel) throws Exception {
+ 
+        userMapper.insertUser(userModel);
+        try {
+            roleService.doOtherThing();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+}
+```
+
+### 大事务问题
+
+在整个方法上添加@Transactional会十分耗时
+
+### 事务不生效
+
+主要因为代理的两种实现，默认使用JDK动态代理需要接口，或者使用CGLIB，需要将当前类设置为自己的父类。
+
+#### 访问权限
+
+被代理的方法是private，这样无论哪种代理都无法解决这个问题。
+
+#### final
+
+被代理的方法是final，无法被子类重写，也不在接口中。
+
+#### 方法内部调用
+
+方法的内部调用中使用的是this方法而不是代理对象的方法，所以也会失效。
+
+```java
+@Service
+public class UserService {
+ 
+    @Autowired
+    private UserMapper userMapper;
+ 
+  
+    public void add(UserModel userModel) {
+        userMapper.insertUser(userModel);
+        updateStatus(userModel);
+    }
+ 
+    @Transactional
+    public void updateStatus(UserModel userModel) {
+        doSameThing();
+    }
+}
+```
+
+可以新建一个service或者在这个Service类中注入自己：@Autowired private ServiceA serviceA;spring ioc内部的三级缓存保证这里不会出现循环依赖
+
+#### 类未被Spring管理
+
+使用spring事务的前提，对象被spring管理，需要创建bean实例。
+
+```java
+//@Service
+public class UserService {
+ 
+    @Transactional
+    public void add(UserModel userModel) {
+         saveData(userModel);
+         updateData(userModel);
+    }  
+}
+```
+
+#### 多线程调用
+
+如下图中的方法，不在同一个数据库连接上，就是两个事务，那么doOtherThing回滚也不会影响外面的。
+
+```java
+@Slf4j
+@Service
+public class UserService {
+ 
+    @Autowired
+    private UserMapper userMapper;
+    @Autowired
+    private RoleService roleService;
+ 
+    @Transactional
+    public void add(UserModel userModel) throws Exception {
+        userMapper.insertUser(userModel);
+        new Thread(() -> {
+            roleService.doOtherThing();
+        }).start();
+    }
+}
+ 
+@Service
+public class RoleService {
+ 
+    @Transactional
+    public void doOtherThing() {
+        System.out.println("保存role表数据");
+    }
+}
+```
+
+#### 未开启事务
+
+springboot项目通过`DataSourceTransactionManagerAutoConfiguration`类，帮开启了事务。如果是传统Spring项目，需要手动配置。
+
 # Spring常用注解
+
 
 ## @Configuration，@Component，@Service，@Controller
 
+
 # spring容器的存储结构
+
+## 循环依赖
+
+```java
+@Component
+class A{
+    @Autowire
+    B b;
+}
+
+@Component
+class B{
+    @Autowire
+    A a;
+}
+```
+
+创建A发现引用了B，创建B发现引用了A
+
+## 解决方式
