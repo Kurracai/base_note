@@ -883,7 +883,99 @@ springboot项目通过`DataSourceTransactionManagerAutoConfiguration`类，帮�
 
 # Spring常用注解
 
-## @Configuration，@Component，@Service，@Controller
+## @ComponentScan
+
+扫描目录下的Component
+
+## @Configuration
+
+类似一个xml文件，包含一个@Configuration
+
+## @Component、@Controller、@Service、@Repository
+
+@Component
+
+1. 作用：把普通pojo实例化到spring容器中，相当于之前xml配置文件中的    `<bean id="" class=""/>  `）
+2. Component注解也就是“Controller注解”、“Service注解”和“Repository注解”的通用注解，可以和它们起到相同的作用(在不清楚使用那个注解的时候，可以统统使用Component，为了代码逻辑清晰，还是建议使用具体的注解)。这四个注解都是类级别的， 可以不带任何参数，也可以带一个参数，代表bean名字，在进行注入的时候就可以通过名字进行注入了。
+3. 泛指各种组件，就是说当我们的类不属于各种归类的时候（不属于@Controller、@Service等的时候），我们就可以使用@Component来标注这个类。
+
+@Controller
+
+1. 说明：功能与@Component类似，普通pojo实例化到spring容器中，相当于配置文件中的：`<bean id="" class=""/> `；     @Controller 负责注册一个bean 到spring 上下文中，bean 的ID 默认为类名称开头字母小写,你也可以自己指定；
+2. 功能：类级别注解，用来声明控制器类（前端控制器），相当于struts中的action层，@Controller 用于标记在一个类上，使用它标记的类就是一个SpringMVC Controller 对象。分发处理器将会扫描使用了该注解的类的方法。通俗来说，被Controller标记的类就是一个控制器，这个类中的方法，就是相应的动作。
+3. 控制器类上、和方法上，可以使用@RequestMapping注解：是一个用来处理请求地址映射的注解，可用于类或方法上：
+
+   （1）类上：表示类中的所有响应请求的方法都是以该地址作为父路径。比如下图中，跳转到登录页面的路径就是localhost:8080/xxx-war/user/toLogin；
+
+   （2）方法上：表示当前方法的请求路径；
+
+@Service
+
+
+（1）、 不带参数：@Service注解，是告诉Spring，当Spring要创建UserServiceImpl的的实例时，bean的名字默认叫做"userService"，也就是类名的首字母小写，这样当Action需要使用UserServiceImpl的的实例时,就可以由Spring创建好的"userService"，然后注入给Action。
+
+      （2）、 带参数：@Service("userService")注解，是告诉Spring，当Spring要创建UserServiceImpl的的实例时，bean的名字必须叫做"userService"，这样当Action需要使用UserServiceImpl的的实例时,就可以由Spring创建好的"userService"，然后注入给Action。
+1. 用于标注服务层，主要用来进行业务的逻辑处理，是类级别的注解，用于声明Service类。用法参考“Component注解”。
+2. Service注解，可以带参数或者不带参数；
+
+@Repository
+
+1. 用于标注数据访问层，也可以说用于标注数据访问组件，即DAO组件；
+2. Repository注解，同样是可以带参数，或者不带参数；
+
+## @Component与@Bean
+
+### 相同点
+
+* @Component 和 @Bean 是两种使用注解来定义bean的方式。
+* @Component和@Bean的目的是一样的，都是注册bean到Spring容器中。
+* 两者都可以通过@Autowired装配
+
+### 不同点
+
+
+@Component 和 它的子类型（@Controller, @Service and @Repository）注释在类上。告诉Spring，我是一个bean，通过类路径扫描自动检测并注入到Spring容器中。
+
+@Bean不能注释在类上，只能用于在配置类（@Configuration）中显式声明单个bean。意思就是，我要获取这个bean的时候，spring要按照这种方式去获取这个bean。默认情况下@Bean注释的方法名作为对象的名字，也可以用name属性定义对象的名字。
+
+### 使用示例
+
+```java
+@Service
+@RequestMapping("/web")
+public class WebController {
+    @ResponseBody
+    @RequestMapping("/msg")
+    public String message(){
+        return "msg";
+    }
+}
+
+```
+@Bean示例
+
+```java
+ // Just a POJO
+public class MessageBuilder {
+     public String getMsg(){
+         return "msgBuilder";
+     }
+}
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+// Let's turn the POJO into a bean
+@Configuration
+public class AppConfig {
+    @Bean
+    public MessageBuilder messageBuilder(){
+        return new MessageBuilder();
+    }
+}
+
+
+```
+
 
 # spring容器的存储结构
 
@@ -902,7 +994,6 @@ class B{
     A a;
 }
 ```
-
 创建A发现引用了B，创建B发现引用了A
 
 ## 解决方式
@@ -964,7 +1055,6 @@ public class B {
 
 }
 ```
-
 A注入B的方式是通过构造器，B注入A也是通过构造器，这时候循环依赖无法被解决，因为构造器注入发生在实例化阶段，而Spring解决循环依赖问题依靠的三级缓存在属性注入阶段，也就是说调用构造函数时还不能放入三级缓存所有无法解决构造器注入的循环依赖问题。
 
 ![1722265224413.png](./1722265224413.png)
@@ -979,7 +1069,6 @@ Spring根据beanName字典序来进行创建，所以先创建A。A是通过sett
 这个情况的循环依赖是没办法通过Spring自身解决的。
 
 依然是先创建A，但是A是通过构造方法注入的B，也就是说A在注入B的时候，仍然还在实例化阶段，实例化方法还没有执行完。通过上面我们知道，将A的beanFactory加入到三级缓存的addSingletonFactory()方法是在完成实例化方法createBeanInstance()之后执行的，但是此时仍然在实例化的过程中，三级缓存中还没有A的beanFactory，这个时候就去注入B，在进入到创建B的流程中时，又会对B来注入A，但此时三级缓存中获取不到对应的beanFactory，也就无法得到A，无法完成对B的创建，后续的流程也就无法推进下去，这样就直接报错循环依赖问题了。
-
 
 ### spring如何解决循环依赖
 
@@ -1010,7 +1099,6 @@ private final Map<String, Object> earlySingletonObjects = new HashMap<String, Ob
 
 private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<String, ObjectFactory<?>>(16);
 ```
-
 三级缓存分别是：
 
 - singletonObbjects：一级缓存单例池，主要存放最终形态的单例bean；我们一般获取一个bean都是从这个缓存中获取；需要说明的是并不是所有单例bean都存在这个缓存当中，有些特殊的单例bean不存在这个缓存当中
@@ -1020,7 +1108,6 @@ private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<Str
 三级缓存的目的就是为了延迟代理对象的创建
 
 为什么会存在三级缓存，主要原因就是：延迟代理对象的创建。设想一下，如果在实例化出一个原始对象的时候，就直接将这个原始对象的代理对象创建出来（如果需要创建的话），然后就放在二级缓存中，似乎感觉三级缓存就没有存在的必要了对吧，但是请打住，这里存在的问题就是，如果真这么做了，那么每一个对象在实例化出原始对象后，就都会去创建代理对象，而Spring的原始设计中，代理对象的创建应该是由AnnotationAwareAspectJAutoProxyCreator这个后置处理器的postProcessAfterInitialization() 来完成，也就是：在对象初始化完毕后，再去创建代理对象。如果真的只用两个缓存来解决循环依赖，那么就会打破Spring对AOP的一个设计思想。
-
 
 如果不把代理对象创建出来而是把未初始化完的实例放到二级缓存中：
 
@@ -1032,9 +1119,6 @@ private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<Str
    * A的原始实例被注入到B中。
 3. **代理对象的问题** ：
    * A的代理对象应该在初始化完成后创建，但此时原始A实例已经在B中被使用，无法再用代理对象替换。
-
-
-
 
 具体流程：
 
@@ -1051,16 +1135,15 @@ private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<Str
 - 因为三级缓存中有 AService 的原始对象封装的 ObjectFactory 对象，所以可以获取到的代理对象或原始对象，并且上移到二级缓存中，提前暴露给 BService 调用。
 - 所以 BService 可以完成属性注入，然后进行初始化后，将 Bean 放入一级缓存，这样 AService 也可以完成创建。
 
-
 这样做有什么好处呢？让我们来分析一下“A的某个field或者setter依赖了B的实例对象，同时B的某个field或者setter依赖了A的实例对象”这种循环依赖的情况。A首先完成了创建的第一步（完成实例化），并且将自己提前曝光到singletonFactories中，此时进行创建的第二步（属性注入），发现自己依赖对象B，此时就尝试去get(B)，发现B还没有被create，所以走create(B)的流程，B在创建第一步的时候发现自己依赖了对象A，于是尝试get(A)，尝试一级缓存singletonObjects(肯定没有，因为A还没初始化完全)，尝试二级缓存earlySingletonObjects（也没有），尝试三级缓存singletonFactories，由于A通过ObjectFactory将自己提前曝光了，所以B能够通过ObjectFactory.getObject拿到A对象(虽然A还没有初始化完全，但是总比没有好呀)，B拿到A对象后顺利完成了创建的阶段1、2、3，B完成创建后之后将自己放入到一级缓存singletonObjects中。此时返回A的创建流程中，A此时能拿到B的对象顺利完成自己的创建阶段2、3，最终A也完成了创建，将创建好的A添加到一级缓存singletonObjects中，而且更加幸运的是，由于B拿到了A的对象引用，所以B现在持有的A对象也完成了创建。（简单来说，就是spring创造了一个循环依赖的结束点标识）
 
- ![1722266430644.png](./1722266430644.png)
+![1722266430644.png](./1722266430644.png)
 
- ![1722266648734.png](./1722266648734.png)
+![1722266648734.png](./1722266648734.png)
 
 从上图中我们可以看到，虽然在创建B时会提前给B注入了一个还未初始化的A对象，但是在创建A的流程中一直使用的是注入到B中的A对象的引用，之后会根据这个引用对A进行初始化，所以这是没有问题的。
 
- ![1722266600611.png](./1722266600611.png)
+![1722266600611.png](./1722266600611.png)
 
 回到上面的例子，我们对A进行了AOP代理的话，那么此时getEarlyBeanReference将返回一个代理后的对象，而不是实例化阶段创建的对象，这样就意味着B中注入的A将是一个代理对象而不是A的实例化阶段创建后的对象。
 
@@ -1072,9 +1155,7 @@ private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<Str
 
 由上图可见，创建A的流程中，在完成对A的初始化后，此时仍然还是原始的A对象。我们知道在A实例化之后，会将A的BeanFactory加入到第三级缓存中，这个BeanFactory可以返回AOP代理增强之后的A对象，但是此时在创建A的流程中，一直操作的是A的原始对象，并没有通过BeanFactory获取A的代理增强对象。只不过是在创建A所依赖的B时，因为B也同样依赖A，而根据自然顺序（按照BeanName的字典序）B在A之后创建，所以在对B注入A的时候三级缓存中已经存在了A的BeanFactory，所以B注入的A是通过BeanFactory返回的A的代理增强后的对象。但是针对A本身的创建流程来说，在A初始化后，操作的仍然是A的原始对象。
 
-
 答案：由源码可知Spring又调用了一次getSingleton方法，但这一次传入的参数又不一样了，第二个参数传入的是false，false可以理解为禁用第三级缓存，前面图中已经提到过了，在为B中注入A后，就将A的BeanFactory返回的代理对象加到了二级缓存中，并就将A的BeanFactory从三级缓存中的移除。此时A的BeanFactory已经不在三级缓存中了，并且在本次调用getSingleton方法是传入的参数已经保证了禁用第三级缓存了，所以这里的这个getSingleton方法做的实际就是从二级缓存中获取到这个代理后的A对象。
-
 
 **3、初始化的时候是对A对象本身进行初始化（初始化之前也都是对原始A对象进行的处理），而添加到Spring容器中以及注入到B中的都是代理对象，这样不会有问题吗？**
 答：不会，这是因为不管是cglib代理还是jdk动态代理生成的代理类，内部都持有一个目标类的引用，当调用代理对象的方法时，实际会去调用目标对象的方法，A原始类完成初始化相当于代理对象自身也完成了初始化。
@@ -1083,7 +1164,6 @@ private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<Str
 答：这个工厂的目的在于延迟对实例化阶段生成的对象的代理，只有真正发生循环依赖的时候，才去提前生成代理对象，否则只会创建一个工厂并将其放入到三级缓存中，但是不会去通过这个工厂去真正创建对象。
 
 在普通的循环依赖中，三级缓存没有任何作用，三级缓存的目的是为了解决Spring的AOP问题。
-
 
 #### 三级缓存真的提高了效率吗？
 
@@ -1133,7 +1213,6 @@ public class B {
 }
 
 ```
-
 这样的B不会立即创建，而是会被代理对象替代，只有实际访问B时候才会创建B实例。
 
 #### 使用@PostConstruct
