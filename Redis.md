@@ -1,10 +1,21 @@
 # redis
 
+- 数据结构
+- 数据类型
+- 体系架构
+- 分布式锁
+- 基础指令
+- 删除&淘汰策略
+- 分布式相关架构-哨兵-脑裂
+- 缓存问题与解决方案
+
+单线程：[【Redis】高级篇： 一篇文章讲清楚Redis的单线程和多线程_redis的i文件描述符-CSDN博客](https://blog.csdn.net/aqin1012/article/details/131944713)
+
 ## 概述
 
 Redis (REmote DIctionary Server) ：用 C 语言开发的一个开源的高性能键值对（key-value）数据库
 
-特征：
+特征：0
 
 * 数据间没有必然的关联关系，**不存关系，只存数据**
 * 数据**存储在内存**，存取速度快，解决了磁盘 IO 速度慢的问题
@@ -559,6 +570,8 @@ Redis 的时间事件分为以下两类：
 无序链表指是链表不按 when 属性的大小排序，每当时间事件执行器运行时（单线程循环处理）就必须遍历整个链表，查找所有已到达的时间事件，并调用相应的事件处理器处理
 
 无序链表并不影响时间事件处理器的性能，因为正常模式下的 Redis 服务器**只使用 serverCron 一个时间事件**，在 benchmark 模式下服务器也只使用两个时间事件，所以无序链表不会影响服务器的性能，几乎可以按照一个指针处理
+
+![1723267522317.png](./1723267522317.png)
 
 #### 多线程
 
@@ -1628,7 +1641,7 @@ SETNX 获取锁时，设置一个指定的唯一值（UUID），释放前获取�
 SET lock_key unique_value NX PX 10000
 ```
 
-但是即使如此也有可能出现线程1判断标识一致以后准备是否锁，但此时该线程阻塞超时了，此时线程2获取到了锁，然后线程1不再阻塞执行是否锁操作，因为两个操作不存在原子性。
+但是即使如此也有可能出现线程1判断标识一致以后准备释放锁，但此时该线程阻塞超时了，此时线程2获取到了锁，然后线程1不再阻塞执行是否锁操作，因为两个操作不存在原子性。
 
 Lua 脚本（unlock.script）实现的释放锁操作的伪代码：key 类型参数会放入 KEYS 数组，其它参数会放入 ARGV 数组，在脚本中通过 KEYS 和 ARGV 传递参数，**保证判断标识和释放锁这两个操作的原子性**
 
@@ -1856,7 +1869,7 @@ Redis 集群是 Redis 提供的分布式数据库方案，集群通过分片（s
 
 一个节点就是一个**运行在集群模式下的 Redis 服务器**，Redis 在启动时会根据配置文件中的 `cluster-enabled` 配置选项是否为 yes 来决定是否开启服务器的集群模式
 
-节点会继续使用所有在单机模式中使用的服务器组件，使用 redisServer 结构来保存服务器的状态，使用 redisClient 结构来保存客户端的状态，也有集群特有的数据结构
+节点会继续使用所有在单机模式中使用的服务器组件，使用 redisServer 结构来保存服务器的状态，使用 redisClient 结构来保存客户端的状态，也有集群特有的数据结构5
 
 ![](https://seazean.oss-cn-beijing.aliyuncs.com/img/DB/Redis-集群模式.png)
 
@@ -1921,7 +1934,7 @@ Redis 客户端可以订阅任意数量的频道，每当有客户端向被订�
 
 ##### 旁路缓存
 
-缓存本质：弥补 CPU 的高算力和 IO 的慢读写之间巨大的鸿沟
+缓存本质：弥补 CPU 的高算力和 IO 的慢读写之间巨大的鸿沟，在处理请求时候跳过缓存的策略，用于确保某些操作的结果始终是最新的。
 
 旁路缓存模式 Cache Aside Pattern 是平时使用比较多的一个缓存读写模式，比较适合读请求比较多的场景
 
@@ -1986,6 +1999,8 @@ Read-Through Pattern 也存在首次不命中的问题，采用缓存预热解�
   * 使用 Redis 自带的内存淘汰机制
 
 #### 缓存问题
+
+[Redis实战之缓存：查询、添加缓存、更新缓存、缓存预热、缓存穿透、缓存雪崩、缓存击穿 解决方案及实例代码_redis 多条件查询并更新-CSDN博客](https://blog.csdn.net/qq_54429571/article/details/128080195)
 
 ##### 缓存预热
 
@@ -2152,7 +2167,7 @@ jdk的Lock底层使用一个voaltile的一个state变量记录重入的状态。
 
 **在Redisson中，不再用简单的key-value来实现分布式锁。而是使用key-hashMap来实现分布式锁，hashMap中也是key-value组合，key为表示哪个线程持有这把锁，value为锁的重入次数。**
 
- ![1722689836355.png](./1722689836355.png)
+![1722689836355.png](./1722689836355.png)
 
 线程A进来获取锁，首先判断锁是否存在，如果不存在，那么获取锁，并添加自己的线程标识，并设置锁的有效期，随后执行业务。
 
@@ -2424,7 +2439,6 @@ return nil;                                  // 返回nil
 * 如果锁的计数小于或等于 0，删除锁并发布解锁消息，通知其他等待该锁的线程。
 * 返回相应的结果（0 表示锁仍存在，1 表示锁已释放，nil 表示当前线程没有持有该锁）。
 
-
 ## Redission锁重试和watchDog机制
 
 tryLock有以下几种重载方式
@@ -2532,19 +2546,19 @@ public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws Inte
                             var16 = false;
                             return var16;
                         }
-                      
-                      
+                
+                
                         /**
-                      
+                
                         （重试机制）
                         下面这段代码设计得非常巧妙
                         它并不是无休止得循环等
                         而是先等待另外一个线程释放锁，再进程重试
                         这样设计减少了CPU的浪费
-                      
+                
                         **/
-                      
-                      
+                
+                
 						//还剩下最长等待时间的大于0
                         currentTime = System.currentTimeMillis();
                        	//ttl < time：也就是该key的剩余过期时间小于剩余的最长等待时间
@@ -2562,10 +2576,10 @@ public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws Inte
                             //订阅
                             ((RedissonLockEntry)subscribeFuture.getNow()).getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
                         }
-                      
-                      
-                      
-                     
+                
+                
+                
+               
 						//重置剩余的最长的等待时间
                         time -= System.currentTimeMillis() - currentTime;
                     } while(time > 0L);
@@ -2729,7 +2743,6 @@ public void unlock() {
 }
 ```
 
-
 释放主要看unlockAsync方法。
 
 unlockAsync方法这里有一个unlockInnerAsync。
@@ -2807,11 +2820,11 @@ void cancelExpirationRenewal(Long threadId) {
 
 当我们去写命令的时候，会写在主机上，主机会将数据同步给从机。但是如果这时候主机还没来得及将数据写到从机的时候，主机宕机了，这时候哨兵会发现主机宕机，并且选举一个slave变成master，而此时新的master中实际上并没有锁信息，此时锁信息就已经丢掉了。
 
- ![1722695818275.png](./1722695818275.png)
+![1722695818275.png](./1722695818275.png)
 
 为了解决这个问题，redission提出来了MutiLock锁，使用这把锁咱们就不使用主从了，每个节点的地位都是一样的， 这把锁加锁的逻辑需要写入到每一个主丛节点上，只有所有的服务器都写入成功，此时才是加锁成功。假设现在某个节点挂了，有一个线程乘虚而入，想要获取锁，那么这个线程虽然再第一个节点能获取锁，但是只有再所有主节点中获取到锁，才算成功获取锁，因为其他主节点的都是被原来的线程占有，乘虚而入的线程无法获取另外两个节点的锁，因此获取锁失败。
 
- ![1722695926852.png](./1722695926852.png)
+![1722695926852.png](./1722695926852.png)
 
 **Redission锁的MutiLock的使用**
 
@@ -2946,7 +2959,7 @@ public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws Inte
             if (this.locks.size() - acquiredLocks.size() == this.failedLocksLimit()) {
                 break;
             }
-		
+
             if (failedLocksLimit == 0) {
                 //将已经拿到的锁释放掉
                 this.unlockInner(acquiredLocks);
@@ -2993,16 +3006,16 @@ public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws Inte
             RLock rLock = (RLock)var24.next();
             //给每一个把锁设置有效期，也就是重置有效期
             /**
-          
+    
             为什么要这样做呢？
             因为当获取到第一把锁的时候，有效期就开始倒计时了
             因此第一把锁的剩余有效期一定会比最后一把锁的剩余有效期要短
             这样就会出现有些锁释放，有些还没释放的情况
-          
+    
             为什么要指定锁释放时间的时候才进行这操作？
             因为不指定的时候会触发看门狗机制，有效期会自动去续费，不需要我们操作
-          
-          
+    
+    
             **/
             RFuture<Boolean> future = ((RedissonLock)rLock).expireAsync(unit.toMillis(leaseTime), TimeUnit.MILLISECONDS);
             futures.add(future);

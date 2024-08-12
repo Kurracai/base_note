@@ -29,7 +29,7 @@ public class SmtpEmailService implements EmailService {
 
 ```
 
-依赖注入：一种设计模式？将对象的依赖关系在外部进行配置而不是在类内部通过代码创建。
+依赖注入：将对象的依赖关系在外部进行配置而不是在类内部通过代码创建。
 
 如下示例中就是使用配置文件或注解（下文）来配置依赖注入。
 
@@ -106,13 +106,18 @@ Spring自带了几种容器实现：
 
 ### BeanFactory
 
-负责管理和创建应用程序中的Bean（即Java对象）。提供了Bean的定义、实例化、配置以及依赖注入等功能。
+负责管理和创建应用程序中的Bean（即Java对象）。
+
+* 加载Bean的配置信息。
+* 实例化Bean。
+* 维护Bean的生命周期。
+* 注入Bean之间的依赖关系。
 
 基本实现流程如下：
 
 1.读取配置
 
-2.bean的定义
+2.bean的定义对象（创建BeanDefinition，包括Bean的各个信息，比如Bean的类名，作用域，依赖关系等，并且注册到一个Bean定义注册表中。）
 
 3.Bean实例化与依赖注入
 
@@ -124,7 +129,7 @@ BeanFactory支持懒加载或延迟初始化，只有在请求某个Bean时才�
 
 ### ApplicationContext
 
-建立在BeanFactory上的容器，在他的基础上做了增强，比如
+建立在BeanFactory上的容器，在他的基础上做了增强，是BeanFactory的子接口，比如
 
 - 事件传播
 - 资源加载-可以从多种资源位置如文件系统、类路径加载资源
@@ -142,7 +147,7 @@ BeanFactory支持懒加载或延迟初始化，只有在请求某个Bean时才�
 ApplicationContext context = new FileSystemXmlApplicationContext("c:/a.xml"); 
 ```
 
-## 区别
+### 区别
 
 BeanFactory采用延迟加载，getBean时候才会对Bean进行加载实例化。
 
@@ -153,6 +158,13 @@ ApplicationContext内存占用比较多。
 BeanFactory只有最基本的依赖注入支持。
 
 ApplicationContext完善了Bean生命周期管理机制-允许通过回调接口控制Bean的初始化和销毁过程。
+
+区别：
+
+1. **延迟加载 vs. 预先加载：** BeanFactory 采用延迟加载策略，只有在需要时才会实例化Bean。而 ApplicationContext 在容器启动时就会实例化所有的Bean。
+2. **功能扩展：** ApplicationContext 提供了更多的企业级功能，如国际化、事件传播、资源加载等。它是BeanFactory 的一个扩展版本，适用于更复杂的应用程序。
+3. **性能：** 由于 ApplicationContext 预先实例化所有的Bean，因此在启动时可能会有一些性能开销。相比之下，BeanFactory 的性能可能更好，因为它只在需要时才实例化Bean。
+4. **使用场景：** 如果您的应用程序较小且对性能要求较高，可以使用BeanFactory。如果您需要更多的企业级功能或希望在启动时立即初始化Bean，可以使用ApplicationContext。
 
 ## aop模块
 
@@ -433,7 +445,58 @@ FactoryBean：由spring生成出来的Bean就是FactoryBean。
 
 BeanFactory：Bean工厂，创建Bean对象的工厂。
 
-## @Autowired、@Resource与@Qualifier区分
+## @Autowired、@Resource、@Qualifier与@Value区分
+
+### @Autowired
+
+1、容器中有唯一的一个bean对象类型和被@Autowired修饰的变量类型匹配，就可以注入成功！
+2、容器中没有一个bean对象类型和被@Autowired修饰的变量类型匹配，则注入失败运行报错。
+3、容器中有多个bean对象类型和被@Autowired修饰的变量类型匹配，则根据被@Autowired修饰的变量名寻找，找到则注入成功
+
+### @Qualifier
+
+根据上面@Autowired的第三种情况，需要更改变量名来对应注入，这样就对程序不是很灵活，于是有了@Qualifier这个注解。@Qualifier的作用是在按照类中注入的基础之上再按照名称注入。它在给类成员注入时不能单独使用（但是在给方法参数注入时可以单独使用），因此@Qualifier注解很受限制，因此用的不是很多。@Qualifier常常组合@Autowired一起使用，用来指明具体名字的自动装配.
+
+```java
+
+    @Autowired //如果单纯一个@Autowired 注解则表示找类型为IAccuntDao的，如果有两个类型为IAccuntDao的，则接着匹配类型为IAccuntDao而且名字为accountDao的【缺点：要改变量名指定】
+    @Qualifier("accountDao2") //加上这个注解直接找类型为IAccuntDao而且名字为accountDao2的
+    private IAccuntDao accountDao;
+  
+    所以这段代码注解的意思就是直接找类型为IAccuntDao而且名字为accountDao的组件
+```
+
+### @Resource
+
+@Resource由J2EE提供，默认是按照byName自动注入（通过名字自动注入），@Resource有两个重要的属性，name和type，当然默认是通过name，这里type属性就没必要讲了，用type属性多此一举，还不如用@Autowired，因此对于@Resource记住通过名字自动注入就好了
+
+```java
+ @Resource("accountDao2")
+ private IAccuntDao accountDao;
+
+```
+
+### @Value
+
+由于@Autowired、@Qualifier、@Resource三者自动装配只能针对于注入其他bean类型的数据，而基本类型和String类型无法使用上述注解实现。因此有了@Value这个注解，@Value专门用来服务基本类型和String类型。
+
+另外@Value注解有一个value 属性：用于指定数据的值。它可以使用spring中SpEL(也就是spring的EL表达式）。SpEL的写法：${表达式}，当然也可以类似mybatis中的 #{表达式} 的写法
+
+```java
+@Value("#{2*3}")  //#写法 表示6
+private int age;
+
+@Value("178")    //普遍写法 178
+private int height;
+
+@Value("${man.weight}")  //SpEL的写法一般操作配置文件中数据
+private int weight;
+
+```
+
+### autowired与resource区别
+
+![1723102282027.png](./1723102282027.png)
 
 ## 作用
 
@@ -893,6 +956,8 @@ springboot项目通过`DataSourceTransactionManagerAutoConfiguration`类，帮�
 
 ## @Component、@Controller、@Service、@Repository
 
+https://juejin.cn/post/7260499321984237629
+
 @Component
 
 1. 作用：把普通pojo实例化到spring容器中，相当于之前xml配置文件中的    `<bean id="" class=""/>  `）
@@ -911,10 +976,10 @@ springboot项目通过`DataSourceTransactionManagerAutoConfiguration`类，帮�
 
 @Service
 
-
 （1）、 不带参数：@Service注解，是告诉Spring，当Spring要创建UserServiceImpl的的实例时，bean的名字默认叫做"userService"，也就是类名的首字母小写，这样当Action需要使用UserServiceImpl的的实例时,就可以由Spring创建好的"userService"，然后注入给Action。
 
-      （2）、 带参数：@Service("userService")注解，是告诉Spring，当Spring要创建UserServiceImpl的的实例时，bean的名字必须叫做"userService"，这样当Action需要使用UserServiceImpl的的实例时,就可以由Spring创建好的"userService"，然后注入给Action。
+（2）、 带参数：@Service("userService")注解，是告诉Spring，当Spring要创建UserServiceImpl的的实例时，bean的名字必须叫做"userService"，这样当Action需要使用UserServiceImpl的的实例时,就可以由Spring创建好的"userService"，然后注入给Action。
+
 1. 用于标注服务层，主要用来进行业务的逻辑处理，是类级别的注解，用于声明Service类。用法参考“Component注解”。
 2. Service注解，可以带参数或者不带参数；
 
@@ -932,7 +997,6 @@ springboot项目通过`DataSourceTransactionManagerAutoConfiguration`类，帮�
 * 两者都可以通过@Autowired装配
 
 ### 不同点
-
 
 @Component 和 它的子类型（@Controller, @Service and @Repository）注释在类上。告诉Spring，我是一个bean，通过类路径扫描自动检测并注入到Spring容器中。
 
@@ -952,6 +1016,7 @@ public class WebController {
 }
 
 ```
+
 @Bean示例
 
 ```java
@@ -976,10 +1041,13 @@ public class AppConfig {
 
 ```
 
-
 # spring容器的存储结构
 
 ## 循环依赖
+
+![1723107583571.png](./1723107583571.png)
+
+[Spring 解决循环依赖为什么需要三级缓存，而不是两级缓存?_spring循环依赖为什么不是二级缓存-CSDN博客](https://blog.csdn.net/u013737132/article/details/135096886)
 
 ```java
 @Component
@@ -994,6 +1062,7 @@ class B{
     A a;
 }
 ```
+
 创建A发现引用了B，创建B发现引用了A
 
 ## 解决方式
@@ -1055,6 +1124,7 @@ public class B {
 
 }
 ```
+
 A注入B的方式是通过构造器，B注入A也是通过构造器，这时候循环依赖无法被解决，因为构造器注入发生在实例化阶段，而Spring解决循环依赖问题依靠的三级缓存在属性注入阶段，也就是说调用构造函数时还不能放入三级缓存所有无法解决构造器注入的循环依赖问题。
 
 ![1722265224413.png](./1722265224413.png)
@@ -1099,6 +1169,7 @@ private final Map<String, Object> earlySingletonObjects = new HashMap<String, Ob
 
 private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<String, ObjectFactory<?>>(16);
 ```
+
 三级缓存分别是：
 
 - singletonObbjects：一级缓存单例池，主要存放最终形态的单例bean；我们一般获取一个bean都是从这个缓存中获取；需要说明的是并不是所有单例bean都存在这个缓存当中，有些特殊的单例bean不存在这个缓存当中
@@ -1213,6 +1284,7 @@ public class B {
 }
 
 ```
+
 这样的B不会立即创建，而是会被代理对象替代，只有实际访问B时候才会创建B实例。
 
 #### 使用@PostConstruct
